@@ -1,6 +1,5 @@
 #include "Python.h"
 #include "Python-ast.h"
-#include "compile.h"
 #include "node.h"
 #include "grammar.h"
 #include "token.h"
@@ -100,9 +99,6 @@ err_input(perrdetail *err)
             msg = "unexpected unindent";
         else {
             errtype = PyExc_SyntaxError;
-            if (err->token == TYPE_COMMENT)
-              msg = "misplaced type annotation";
-            else
             msg = "invalid syntax";
         }
         break;
@@ -232,7 +228,7 @@ string_object_to_c_ast(const char *s, PyObject *filename, int start,
     }
     if (n) {
         flags->cf_flags |= iflags & PyCF_MASK;
-        mod = Ta3AST_FromNodeObject(n, flags, filename, feature_version, arena);
+        mod = Ta3AST_FromNodeObject(n, flags, filename, arena);
         Ta3Node_Free(n);
     }
     else {
@@ -276,7 +272,7 @@ ast3_parse_impl(PyObject *source,
     const char *str;
     int compile_mode = -1;
     PyCompilerFlags cf;
-    int start[] = {Py_file_input, Py_eval_input, Py_single_input, Py_func_type_input};
+    int start[] = {Py_file_input, Py_eval_input, Py_single_input};
     PyObject *result;
 
     cf.cf_flags = PyCF_ONLY_AST | PyCF_SOURCE_IS_UTF8;

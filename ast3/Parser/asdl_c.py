@@ -1010,8 +1010,15 @@ static int add_ast_fields(void)
 class ASTModuleVisitor(PickleVisitor):
 
     def visitModule(self, mod):
+        # add parse method to module
+        self.emit('PyObject *ast3_parse(PyObject *self, PyObject *args);', 0)
+        self.emit('static PyMethodDef ast3_methods[] = {', 0)
+        self.emit('{"_parse",  ast3_parse, METH_VARARGS, "Parse string into typed AST."},', 1)
+        self.emit('{NULL, NULL, 0, NULL}', 1)
+        self.emit('};', 0)
+
         self.emit("static struct PyModuleDef _astmodule3 = {", 0)
-        self.emit('  PyModuleDef_HEAD_INIT, "_ast3"', 0)
+        self.emit('  PyModuleDef_HEAD_INIT, "_ast3", NULL, 0, ast3_methods', 0)
         self.emit("};", 0)
         self.emit("PyMODINIT_FUNC", 0)
         self.emit("PyInit__ast3(void)", 0)
