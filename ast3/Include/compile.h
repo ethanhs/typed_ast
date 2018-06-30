@@ -10,7 +10,7 @@ extern "C" {
 
 /* Public interface */
 struct _node; /* Declare the existence of this type */
-PyAPI_FUNC(PyCodeObject *) PyNode_Compile(struct _node *, const char *);
+PyAPI_FUNC(PyCodeObject *) Ta3Node_Compile(struct _node *, const char *);
 /* XXX (ncoghlan): Unprefixed type name in a public API! */
 
 #define PyCF_MASK (CO_FUTURE_DIVISION | CO_FUTURE_ABSOLUTE_IMPORT | \
@@ -48,14 +48,14 @@ typedef struct {
 #define FUTURE_ANNOTATIONS "annotations"
 
 struct _mod; /* Declare the existence of this type */
-#define PyAST_Compile(mod, s, f, ar) PyAST_CompileEx(mod, s, f, -1, ar)
-PyAPI_FUNC(PyCodeObject *) PyAST_CompileEx(
+#define Ta3AST_Compile(mod, s, f, ar) Ta3AST_CompileEx(mod, s, f, -1, ar)
+PyAPI_FUNC(PyCodeObject *) Ta3AST_CompileEx(
     struct _mod *mod,
     const char *filename,       /* decoded from the filesystem encoding */
     PyCompilerFlags *flags,
     int optimize,
     PyArena *arena);
-PyAPI_FUNC(PyCodeObject *) PyAST_CompileObject(
+PyAPI_FUNC(PyCodeObject *) Ta3AST_CompileObject(
     struct _mod *mod,
     PyObject *filename,
     PyCompilerFlags *flags,
@@ -76,7 +76,7 @@ PyAPI_FUNC(PyObject*) _Py_Mangle(PyObject *p, PyObject *name);
 #define PY_INVALID_STACK_EFFECT INT_MAX
 PyAPI_FUNC(int) PyCompile_OpcodeStackEffect(int opcode, int oparg);
 
-PyAPI_FUNC(int) _PyAST_Optimize(struct _mod *, PyArena *arena, int optimize);
+PyAPI_FUNC(int) _Ta3AST_Optimize(struct _mod *, PyArena *arena, int optimize);
 
 #ifdef __cplusplus
 }

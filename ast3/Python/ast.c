@@ -1,6 +1,6 @@
 /*
  * This file includes functions to transform a concrete syntax tree (CST) to
- * an abstract syntax tree (AST). The main function is PyAST_FromNode().
+ * an abstract syntax tree (AST). The main function is Ta3AST_FromNode().
  *
  */
 #include "Python.h"
@@ -8,10 +8,13 @@
 #include "node.h"
 #include "ast.h"
 #include "token.h"
-#include "pythonrun.h"
+#include "grammar.h"
+#include "errcode.h"
 
 #include <assert.h>
 #include <stdbool.h>
+
+extern grammar _Ta3Parser_Grammar; /* from graminit.c */
 
 static int validate_stmts(asdl_seq *);
 static int validate_exprs(asdl_seq *, expr_context_ty, int);
@@ -554,7 +557,7 @@ validate_exprs(asdl_seq *exprs, expr_context_ty ctx, int null_ok)
 }
 
 int
-PyAST_Validate(mod_ty mod)
+Ta3AST_Validate(mod_ty mod)
 {
     int res = 0;
 
@@ -765,7 +768,7 @@ num_stmts(const node *n)
 */
 
 mod_ty
-PyAST_FromNodeObject(const node *n, PyCompilerFlags *flags,
+Ta3AST_FromNodeObject(const node *n, PyCompilerFlags *flags,
                      PyObject *filename, PyArena *arena)
 {
     int i, j, k, num;
@@ -786,7 +789,7 @@ PyAST_FromNodeObject(const node *n, PyCompilerFlags *flags,
     k = 0;
     switch (TYPE(n)) {
         case file_input:
-            stmts = _Py_asdl_seq_new(num_stmts(n), arena);
+            stmts = _Ta3_asdl_seq_new(num_stmts(n), arena);
             if (!stmts)
                 goto out;
             for (i = 0; i < NCH(n) - 1; i++) {
@@ -826,7 +829,7 @@ PyAST_FromNodeObject(const node *n, PyCompilerFlags *flags,
         }
         case single_input:
             if (TYPE(CHILD(n, 0)) == NEWLINE) {
-                stmts = _Py_asdl_seq_new(1, arena);
+                stmts = _Ta3_asdl_seq_new(1, arena);
                 if (!stmts)
                     goto out;
                 asdl_seq_SET(stmts, 0, Pass(n->n_lineno, n->n_col_offset,
@@ -838,7 +841,7 @@ PyAST_FromNodeObject(const node *n, PyCompilerFlags *flags,
             else {
                 n = CHILD(n, 0);
                 num = num_stmts(n);
-                stmts = _Py_asdl_seq_new(num, arena);
+                stmts = _Ta3_asdl_seq_new(num, arena);
                 if (!stmts)
                     goto out;
                 if (num == 1) {
@@ -865,7 +868,7 @@ PyAST_FromNodeObject(const node *n, PyCompilerFlags *flags,
             break;
         default:
             PyErr_Format(PyExc_SystemError,
-                         "invalid node %d for PyAST_FromNode", TYPE(n));
+                         "invalid node %d for Ta3AST_FromNode", TYPE(n));
             goto out;
     }
  out:
@@ -876,7 +879,7 @@ PyAST_FromNodeObject(const node *n, PyCompilerFlags *flags,
 }
 
 mod_ty
-PyAST_FromNode(const node *n, PyCompilerFlags *flags, const char *filename_str,
+Ta3AST_FromNode(const node *n, PyCompilerFlags *flags, const char *filename_str,
                PyArena *arena)
 {
     mod_ty mod;
@@ -884,7 +887,7 @@ PyAST_FromNode(const node *n, PyCompilerFlags *flags, const char *filename_str,
     filename = PyUnicode_DecodeFSDefault(filename_str);
     if (filename == NULL)
         return NULL;
-    mod = PyAST_FromNodeObject(n, flags, filename, arena);
+    mod = Ta3AST_FromNodeObject(n, flags, filename, arena);
     Py_DECREF(filename);
     return mod;
 
@@ -1194,7 +1197,7 @@ seq_for_testlist(struct compiling *c, const node *n)
     int i;
     assert(TYPE(n) == testlist || TYPE(n) == testlist_star_expr || TYPE(n) == testlist_comp);
 
-    seq = _Py_asdl_seq_new((NCH(n) + 1) / 2, c->c_arena);
+    seq = _Ta3_asdl_seq_new((NCH(n) + 1) / 2, c->c_arena);
     if (!seq)
         return NULL;
 
@@ -1376,22 +1379,22 @@ ast_for_arguments(struct compiling *c, const node *n)
         if (TYPE(ch) == DOUBLESTAR) break;
         if (TYPE(ch) == tfpdef || TYPE(ch) == vfpdef) nkwonlyargs++;
     }
-    posargs = (nposargs ? _Py_asdl_seq_new(nposargs, c->c_arena) : NULL);
+    posargs = (nposargs ? _Ta3_asdl_seq_new(nposargs, c->c_arena) : NULL);
     if (!posargs && nposargs)
         return NULL;
     kwonlyargs = (nkwonlyargs ?
-                   _Py_asdl_seq_new(nkwonlyargs, c->c_arena) : NULL);
+                   _Ta3_asdl_seq_new(nkwonlyargs, c->c_arena) : NULL);
     if (!kwonlyargs && nkwonlyargs)
         return NULL;
     posdefaults = (nposdefaults ?
-                    _Py_asdl_seq_new(nposdefaults, c->c_arena) : NULL);
+                    _Ta3_asdl_seq_new(nposdefaults, c->c_arena) : NULL);
     if (!posdefaults && nposdefaults)
         return NULL;
     /* The length of kwonlyargs and kwdefaults are same
        since we set NULL as default for keyword only argument w/o default
        - we have sequence data structure, but no dictionary */
     kwdefaults = (nkwonlyargs ?
-                   _Py_asdl_seq_new(nkwonlyargs, c->c_arena) : NULL);
+                   _Ta3_asdl_seq_new(nkwonlyargs, c->c_arena) : NULL);
     if (!kwdefaults && nkwonlyargs)
         return NULL;
 
@@ -1555,7 +1558,7 @@ ast_for_decorators(struct compiling *c, const node *n)
     int i;
 
     REQ(n, decorators);
-    decorator_seq = _Py_asdl_seq_new(NCH(n), c->c_arena);
+    decorator_seq = _Ta3_asdl_seq_new(NCH(n), c->c_arena);
     if (!decorator_seq)
         return NULL;
 
@@ -1823,7 +1826,7 @@ ast_for_comprehension(struct compiling *c, const node *n)
     if (n_fors == -1)
         return NULL;
 
-    comps = _Py_asdl_seq_new(n_fors, c->c_arena);
+    comps = _Ta3_asdl_seq_new(n_fors, c->c_arena);
     if (!comps)
         return NULL;
 
@@ -1878,7 +1881,7 @@ ast_for_comprehension(struct compiling *c, const node *n)
             if (n_ifs == -1)
                 return NULL;
 
-            ifs = _Py_asdl_seq_new(n_ifs, c->c_arena);
+            ifs = _Ta3_asdl_seq_new(n_ifs, c->c_arena);
             if (!ifs)
                 return NULL;
 
@@ -2007,11 +2010,11 @@ ast_for_dictdisplay(struct compiling *c, const node *n)
     asdl_seq *keys, *values;
 
     size = (NCH(n) + 1) / 3; /* +1 in case no trailing comma */
-    keys = _Py_asdl_seq_new(size, c->c_arena);
+    keys = _Ta3_asdl_seq_new(size, c->c_arena);
     if (!keys)
         return NULL;
 
-    values = _Py_asdl_seq_new(size, c->c_arena);
+    values = _Ta3_asdl_seq_new(size, c->c_arena);
     if (!values)
         return NULL;
 
@@ -2061,7 +2064,7 @@ ast_for_setdisplay(struct compiling *c, const node *n)
 
     assert(TYPE(n) == (dictorsetmaker));
     size = (NCH(n) + 1) / 2; /* +1 in case no trailing comma */
-    elts = _Py_asdl_seq_new(size, c->c_arena);
+    elts = _Ta3_asdl_seq_new(size, c->c_arena);
     if (!elts)
         return NULL;
     for (i = 0; i < NCH(n); i += 2) {
@@ -2388,7 +2391,7 @@ ast_for_trailer(struct compiling *c, const node *n, expr_ty left_expr)
             expr_ty e;
             int simple = 1;
             asdl_seq *slices, *elts;
-            slices = _Py_asdl_seq_new((NCH(n) + 1) / 2, c->c_arena);
+            slices = _Ta3_asdl_seq_new((NCH(n) + 1) / 2, c->c_arena);
             if (!slices)
                 return NULL;
             for (j = 0; j < NCH(n); j += 2) {
@@ -2404,7 +2407,7 @@ ast_for_trailer(struct compiling *c, const node *n, expr_ty left_expr)
                                  Load, LINENO(n), n->n_col_offset, c->c_arena);
             }
             /* extract Index values and put them in a Tuple */
-            elts = _Py_asdl_seq_new(asdl_seq_LEN(slices), c->c_arena);
+            elts = _Ta3_asdl_seq_new(asdl_seq_LEN(slices), c->c_arena);
             if (!elts)
                 return NULL;
             for (j = 0; j < asdl_seq_LEN(slices); ++j) {
@@ -2570,7 +2573,7 @@ ast_for_expr(struct compiling *c, const node *n)
                 n = CHILD(n, 0);
                 goto loop;
             }
-            seq = _Py_asdl_seq_new((NCH(n) + 1) / 2, c->c_arena);
+            seq = _Ta3_asdl_seq_new((NCH(n) + 1) / 2, c->c_arena);
             if (!seq)
                 return NULL;
             for (i = 0; i < NCH(n); i += 2) {
@@ -2606,10 +2609,10 @@ ast_for_expr(struct compiling *c, const node *n)
                 expr_ty expression;
                 asdl_int_seq *ops;
                 asdl_seq *cmps;
-                ops = _Py_asdl_int_seq_new(NCH(n) / 2, c->c_arena);
+                ops = _Ta3_asdl_int_seq_new(NCH(n) / 2, c->c_arena);
                 if (!ops)
                     return NULL;
-                cmps = _Py_asdl_seq_new(NCH(n) / 2, c->c_arena);
+                cmps = _Ta3_asdl_seq_new(NCH(n) / 2, c->c_arena);
                 if (!cmps) {
                     return NULL;
                 }
@@ -2735,10 +2738,10 @@ ast_for_call(struct compiling *c, const node *n, expr_ty func, bool allowgen)
         }
     }
 
-    args = _Py_asdl_seq_new(nargs, c->c_arena);
+    args = _Ta3_asdl_seq_new(nargs, c->c_arena);
     if (!args)
         return NULL;
-    keywords = _Py_asdl_seq_new(nkeywords, c->c_arena);
+    keywords = _Ta3_asdl_seq_new(nkeywords, c->c_arena);
     if (!keywords)
         return NULL;
 
@@ -3019,7 +3022,7 @@ ast_for_expr_stmt(struct compiling *c, const node *n)
 
         /* a normal assignment */
         REQ(CHILD(n, 1), EQUAL);
-        targets = _Py_asdl_seq_new(NCH(n) / 2, c->c_arena);
+        targets = _Ta3_asdl_seq_new(NCH(n) / 2, c->c_arena);
         if (!targets)
             return NULL;
         for (i = 0; i < NCH(n) - 2; i += 2) {
@@ -3060,7 +3063,7 @@ ast_for_exprlist(struct compiling *c, const node *n, expr_context_ty context)
 
     REQ(n, exprlist);
 
-    seq = _Py_asdl_seq_new((NCH(n) + 1) / 2, c->c_arena);
+    seq = _Ta3_asdl_seq_new((NCH(n) + 1) / 2, c->c_arena);
     if (!seq)
         return NULL;
     for (i = 0; i < NCH(n); i += 2) {
@@ -3288,7 +3291,7 @@ ast_for_import_stmt(struct compiling *c, const node *n)
     if (TYPE(n) == import_name) {
         n = CHILD(n, 1);
         REQ(n, dotted_as_names);
-        aliases = _Py_asdl_seq_new((NCH(n) + 1) / 2, c->c_arena);
+        aliases = _Ta3_asdl_seq_new((NCH(n) + 1) / 2, c->c_arena);
         if (!aliases)
                 return NULL;
         for (i = 0; i < NCH(n); i += 2) {
@@ -3350,7 +3353,7 @@ ast_for_import_stmt(struct compiling *c, const node *n)
             return NULL;
         }
 
-        aliases = _Py_asdl_seq_new((n_children + 1) / 2, c->c_arena);
+        aliases = _Ta3_asdl_seq_new((n_children + 1) / 2, c->c_arena);
         if (!aliases)
             return NULL;
 
@@ -3389,7 +3392,7 @@ ast_for_global_stmt(struct compiling *c, const node *n)
     int i;
 
     REQ(n, global_stmt);
-    s = _Py_asdl_seq_new(NCH(n) / 2, c->c_arena);
+    s = _Ta3_asdl_seq_new(NCH(n) / 2, c->c_arena);
     if (!s)
         return NULL;
     for (i = 1; i < NCH(n); i += 2) {
@@ -3410,7 +3413,7 @@ ast_for_nonlocal_stmt(struct compiling *c, const node *n)
     int i;
 
     REQ(n, nonlocal_stmt);
-    s = _Py_asdl_seq_new(NCH(n) / 2, c->c_arena);
+    s = _Ta3_asdl_seq_new(NCH(n) / 2, c->c_arena);
     if (!s)
         return NULL;
     for (i = 1; i < NCH(n); i += 2) {
@@ -3463,7 +3466,7 @@ ast_for_suite(struct compiling *c, const node *n)
     REQ(n, suite);
 
     total = num_stmts(n);
-    seq = _Py_asdl_seq_new(total, c->c_arena);
+    seq = _Ta3_asdl_seq_new(total, c->c_arena);
     if (!seq)
         return NULL;
     if (TYPE(CHILD(n, 0)) == simple_stmt) {
@@ -3582,7 +3585,7 @@ ast_for_if_stmt(struct compiling *c, const node *n)
         if (has_else) {
             asdl_seq *suite_seq2;
 
-            orelse = _Py_asdl_seq_new(1, c->c_arena);
+            orelse = _Ta3_asdl_seq_new(1, c->c_arena);
             if (!orelse)
                 return NULL;
             expression = ast_for_expr(c, CHILD(n, NCH(n) - 6));
@@ -3606,7 +3609,7 @@ ast_for_if_stmt(struct compiling *c, const node *n)
 
         for (i = 0; i < n_elif; i++) {
             int off = 5 + (n_elif - i - 1) * 4;
-            asdl_seq *newobj = _Py_asdl_seq_new(1, c->c_arena);
+            asdl_seq *newobj = _Ta3_asdl_seq_new(1, c->c_arena);
             if (!newobj)
                 return NULL;
             expression = ast_for_expr(c, CHILD(n, off));
@@ -3824,7 +3827,7 @@ ast_for_try_stmt(struct compiling *c, const node *n)
     if (n_except > 0) {
         int i;
         /* process except statements to create a try ... except */
-        handlers = _Py_asdl_seq_new(n_except, c->c_arena);
+        handlers = _Ta3_asdl_seq_new(n_except, c->c_arena);
         if (handlers == NULL)
             return NULL;
 
@@ -3875,7 +3878,7 @@ ast_for_with_stmt(struct compiling *c, const node *n, int is_async)
     REQ(n, with_stmt);
 
     n_items = (NCH(n) - 2) / 2;
-    items = _Py_asdl_seq_new(n_items, c->c_arena);
+    items = _Ta3_asdl_seq_new(n_items, c->c_arena);
     if (!items)
         return NULL;
     for (i = 1; i < NCH(n) - 2; i += 2) {
@@ -4283,6 +4286,140 @@ fstring_fix_node_location(const node *parent, node *n, char *expr_str)
     fstring_shift_node_locations(n, lines, cols);
 }
 
+/* err_input and err_free are dissected from pythonrun.c */
+
+static void
+err_free(perrdetail *err)
+{
+    Py_CLEAR(err->filename);
+}
+
+/* Set the error appropriate to the given input error code (see errcode.h) */
+
+static void
+err_input(perrdetail *err)
+{
+    PyObject *v, *w, *errtype, *errtext;
+    PyObject *msg_obj = NULL;
+    const char *msg = NULL;
+    int offset = err->offset;
+
+    errtype = PyExc_SyntaxError;
+    switch (err->error) {
+    case E_ERROR:
+        return;
+    case E_SYNTAX:
+        errtype = PyExc_IndentationError;
+        if (err->expected == INDENT)
+            msg = "expected an indented block";
+        else if (err->token == INDENT)
+            msg = "unexpected indent";
+        else if (err->token == DEDENT)
+            msg = "unexpected unindent";
+        else {
+            errtype = PyExc_SyntaxError;
+            msg = "invalid syntax";
+        }
+        break;
+    case E_TOKEN:
+        msg = "invalid token";
+        break;
+    case E_EOFS:
+        msg = "EOF while scanning triple-quoted string literal";
+        break;
+    case E_EOLS:
+        msg = "EOL while scanning string literal";
+        break;
+    case E_INTR:
+        if (!PyErr_Occurred())
+            PyErr_SetNone(PyExc_KeyboardInterrupt);
+        goto cleanup;
+    case E_NOMEM:
+        PyErr_NoMemory();
+        goto cleanup;
+    case E_EOF:
+        msg = "unexpected EOF while parsing";
+        break;
+    case E_TABSPACE:
+        errtype = PyExc_TabError;
+        msg = "inconsistent use of tabs and spaces in indentation";
+        break;
+    case E_OVERFLOW:
+        msg = "expression too long";
+        break;
+    case E_DEDENT:
+        errtype = PyExc_IndentationError;
+        msg = "unindent does not match any outer indentation level";
+        break;
+    case E_TOODEEP:
+        errtype = PyExc_IndentationError;
+        msg = "too many levels of indentation";
+        break;
+    case E_DECODE: {
+        PyObject *type, *value, *tb;
+        PyErr_Fetch(&type, &value, &tb);
+        msg = "unknown decode error";
+        if (value != NULL)
+            msg_obj = PyObject_Str(value);
+        Py_XDECREF(type);
+        Py_XDECREF(value);
+        Py_XDECREF(tb);
+        break;
+    }
+    case E_LINECONT:
+        msg = "unexpected character after line continuation character";
+        break;
+
+    case E_IDENTIFIER:
+        msg = "invalid character in identifier";
+        break;
+    case E_BADSINGLE:
+        msg = "multiple statements found while compiling a single statement";
+        break;
+    default:
+        fprintf(stderr, "error=%d\n", err->error);
+        msg = "unknown parsing error";
+        break;
+    }
+    /* err->text may not be UTF-8 in case of decoding errors.
+       Explicitly convert to an object. */
+    if (!err->text) {
+        errtext = Py_None;
+        Py_INCREF(Py_None);
+    } else {
+        errtext = PyUnicode_DecodeUTF8(err->text, err->offset,
+                                       "replace");
+        if (errtext != NULL) {
+            Py_ssize_t len = strlen(err->text);
+            offset = (int)PyUnicode_GET_LENGTH(errtext);
+            if (len != err->offset) {
+                Py_DECREF(errtext);
+                errtext = PyUnicode_DecodeUTF8(err->text, len,
+                                               "replace");
+            }
+        }
+    }
+    v = Py_BuildValue("(OiiN)", err->filename,
+                      err->lineno, offset, errtext);
+    if (v != NULL) {
+        if (msg_obj)
+            w = Py_BuildValue("(OO)", msg_obj, v);
+        else
+            w = Py_BuildValue("(sO)", msg, v);
+    } else
+        w = NULL;
+    Py_XDECREF(v);
+    PyErr_SetObject(errtype, w);
+    Py_XDECREF(w);
+cleanup:
+    Py_XDECREF(msg_obj);
+    if (err->text != NULL) {
+        PyObject_FREE(err->text);
+        err->text = NULL;
+    }
+}
+
+
 /* Compile this expression in to an expr_ty.  Add parens around the
    expression, in order to allow leading spaces in the expression. */
 static expr_ty
@@ -4302,7 +4439,7 @@ fstring_compile_expr(const char *expr_start, const char *expr_end,
     assert(*expr_end == '}' || *expr_end == '!' || *expr_end == ':');
 
     /* If the substring is all whitespace, it's an error.  We need to catch this
-       here, and not when we call PyParser_SimpleParseStringFlagsFilename,
+       here, and not when we call Ta3Parser_SimpleParseStringFlagsFilename,
        because turning the expression '' in to '()' would go from being invalid
        to valid. */
     for (s = expr_start; s != expr_end; s++) {
@@ -4330,8 +4467,14 @@ fstring_compile_expr(const char *expr_start, const char *expr_end,
     str[len+2] = 0;
 
     cf.cf_flags = PyCF_ONLY_AST;
-    mod_n = PyParser_SimpleParseStringFlagsFilename(str, "<fstring>",
-                                                    Py_eval_input, 0);
+
+    /* dissected from pythonrun.c PyParser_SimpleParseStringFlagsFilename */
+    perrdetail err;
+    mod_n = Ta3Parser_ParseStringFlagsFilename(str, "<fstring>",
+                            &_Ta3Parser_Grammar, 0, &err, Py_eval_input);
+    if (mod_n == NULL)
+        err_input(&err);
+    err_free(&err);
     if (!mod_n) {
         PyMem_RawFree(str);
         return NULL;
@@ -4340,9 +4483,9 @@ fstring_compile_expr(const char *expr_start, const char *expr_end,
     str[0] = '{';
     str[len+1] = '}';
     fstring_fix_node_location(n, mod_n, str);
-    mod = PyAST_FromNode(mod_n, &cf, "<fstring>", c->c_arena);
+    mod = Ta3AST_FromNode(mod_n, &cf, "<fstring>", c->c_arena);
     PyMem_RawFree(str);
-    PyNode_Free(mod_n);
+    Ta3Node_Free(mod_n);
     if (!mod)
         return NULL;
     return mod->v.Expression.body;
@@ -4822,7 +4965,7 @@ ExprList_Finish(ExprList *l, PyArena *arena)
     ExprList_check_invariants(l);
 
     /* Allocate the asdl_seq and copy the expressions in to it. */
-    seq = _Py_asdl_seq_new(l->size, arena);
+    seq = _Ta3_asdl_seq_new(l->size, arena);
     if (seq) {
         Py_ssize_t i;
         for (i = 0; i < l->size; i++)
