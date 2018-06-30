@@ -6,18 +6,17 @@
 
 module Python
 {
-    mod = Module(stmt* body, type_ignore *type_ignores)
+    mod = Module(stmt* body)
         | Interactive(stmt* body)
         | Expression(expr body)
-        | FunctionType(expr* argtypes, expr returns)
 
         -- not really an actual node but useful in Jython's typesystem.
         | Suite(stmt* body)
 
     stmt = FunctionDef(identifier name, arguments args,
-                       stmt* body, expr* decorator_list, expr? returns, string? type_comment)
+                       stmt* body, expr* decorator_list, expr? returns)
           | AsyncFunctionDef(identifier name, arguments args,
-                             stmt* body, expr* decorator_list, expr? returns, string? type_comment)
+                             stmt* body, expr* decorator_list, expr? returns)
 
           | ClassDef(identifier name,
              expr* bases,
@@ -27,18 +26,18 @@ module Python
           | Return(expr? value)
 
           | Delete(expr* targets)
-          | Assign(expr* targets, expr value, string? type_comment)
+          | Assign(expr* targets, expr value)
           | AugAssign(expr target, operator op, expr value)
           -- 'simple' indicates that we annotate simple name without parens
           | AnnAssign(expr target, expr annotation, expr? value, int simple)
 
           -- use 'orelse' because else is a keyword in target languages
-          | For(expr target, expr iter, stmt* body, stmt* orelse, string? type_comment)
-          | AsyncFor(expr target, expr iter, stmt* body, stmt* orelse, string? type_comment)
+          | For(expr target, expr iter, stmt* body, stmt* orelse)
+          | AsyncFor(expr target, expr iter, stmt* body, stmt* orelse)
           | While(expr test, stmt* body, stmt* orelse)
           | If(expr test, stmt* body, stmt* orelse)
-          | With(withitem* items, stmt* body, string? type_comment)
-          | AsyncWith(withitem* items, stmt* body, string? type_comment)
+          | With(withitem* items, stmt* body)
+          | AsyncWith(withitem* items, stmt* body)
 
           | Raise(expr? exc, expr? cause)
           | Try(stmt* body, excepthandler* handlers, stmt* orelse, stmt* finalbody)
@@ -77,7 +76,7 @@ module Python
          | Compare(expr left, cmpop* ops, expr* comparators)
          | Call(expr func, expr* args, keyword* keywords)
          | Num(object n) -- a number as a PyObject.
-         | Str(string s, string kind)
+         | Str(string s) -- need to specify raw, unicode, etc?
          | FormattedValue(expr value, int? conversion, expr? format_spec)
          | JoinedStr(expr* values)
          | Bytes(bytes s)
@@ -119,7 +118,7 @@ module Python
     arguments = (arg* args, arg? vararg, arg* kwonlyargs, expr* kw_defaults,
                  arg? kwarg, expr* defaults)
 
-    arg = (identifier arg, expr? annotation, string? type_comment)
+    arg = (identifier arg, expr? annotation)
            attributes (int lineno, int col_offset)
 
     -- keyword arguments supplied to call (NULL identifier for **kwargs)
@@ -129,7 +128,5 @@ module Python
     alias = (identifier name, identifier? asname)
 
     withitem = (expr context_expr, expr? optional_vars)
-
-    type_ignore = TypeIgnore(int lineno)
 }
 
