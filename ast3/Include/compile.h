@@ -1,5 +1,5 @@
-#ifndef Py_COMPILE_H
-#define Py_COMPILE_H
+#ifndef Ta3_COMPILE_H
+#define Ta3_COMPILE_H
 
 #ifndef Py_LIMITED_API
 #include "code.h"
@@ -90,4 +90,4 @@ PyAPI_FUNC(int) _PyAST_Optimize(struct _mod *, PyArena *arena, int optimize);
 #define Py_file_input 257
 #define Py_eval_input 258
 
-#endif /* !Py_COMPILE_H */
+#endif /* !Ta3_COMPILE_H */
